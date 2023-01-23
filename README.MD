@@ -6,7 +6,7 @@
     - [Pre-requisites](#pre-requisites)
     - [Provider auth](#provider-auth)
     - [Network config](#network-config)
-    - [Locals block](#locals-block)
+    - [Rendering container definition](#rendering-container-definition)
     - [Data layer](#data-layer)
     - [ECS - ASG EC2](#ecs---asg-ec2)
       - [cluster](#cluster)
@@ -74,10 +74,51 @@ module "vpc" {
 With this `vpc` module I'm creating a public subnet and, since I need to communicate with Steam and other players, rules that allow on traffic from any protocol.
 In a more meaningfull project you should create only the necessary inbound and outbound rules with specific protocols.
 
-### Locals block
+### Rendering container definition
+```hcl
+resource "random_string" "valheim_pwd" {
+  length  = 6
+  numeric = true
+  special = false
+}
+
+locals {
+  access_points = {
+    "valheim-saves"   = "/home/steam/.config/unity3d/IronGate/Valheim"
+    "valheim-server"  = "/home/steam/valheim"
+    "valheim-backups" = "/home/steam/backups"
+  }
+  ecs_task_mount_points = jsonencode([
+    for k, v in local.access_points : {
+      "sourceVolume" : "${k}"
+      "containerPath" : "${v}"
+    }
+  ])
+  ecs_task_container_definition = templatefile("valheim-task-container-definition.tftpl", {
+    aws_region   = data.aws_region.current.name
+    mount_points = local.ecs_task_mount_points
+    password     = random_string.valheim_pwd.result
+    server_name  = var.server_name
+    word_name    = var.world_name
+    timezone     = var.timezone
+  })
+}
+```
+Here I create a random password that will used in the valheim server (I use random_string so I can output it in plain text, again, on a more meaningful project, protect your credentials acordingly). The locals block are the variables that will be used to render the [ECS task container definition](valheim-task-container-definition.tftpl).
 
 ### Data layer
+```hcl
+resource "aws_ebs_volume" "valheim" {
+  for_each          = local.access_points
+  availability_zone = local.config_default_az
+  size              = 5
 
+  tags = {
+    "Name" = each.key
+  }
+}
+```
+In this project I'm using EBS, so I create one for each mount point of my container and give each 5gb size. I am using EBS to improve performance, as it is better suited for my use case. For an alternative using Fargate and EFS please refer to [this other repository](https://github.com/rdalbuquerque/valheim-server-fargate)
 
 ### ECS - ASG EC2
 #### cluster
