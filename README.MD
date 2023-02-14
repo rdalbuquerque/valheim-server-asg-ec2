@@ -84,14 +84,23 @@ resource "random_string" "valheim_pwd" {
 
 locals {
   access_points = {
-    "valheim-saves"   = "/home/steam/.config/unity3d/IronGate/Valheim"
-    "valheim-server"  = "/home/steam/valheim"
-    "valheim-backups" = "/home/steam/backups"
+    "valheim-saves"   = {
+      size = 5
+      path = "/home/steam/.config/unity3d/IronGate/Valheim"
+    }
+    "valheim-server"  = {
+      size = 6
+      path = "/home/steam/valheim"
+    }
+    "valheim-backups" = {
+      size = 1
+      path = "/home/steam/backups"
+    }
   }
   ecs_task_mount_points = jsonencode([
     for k, v in local.access_points : {
       "sourceVolume" : "${k}"
-      "containerPath" : "${v}"
+      "containerPath" : "${v.path}"
     }
   ])
   ecs_task_container_definition = templatefile("valheim-task-container-definition.tftpl", {
@@ -111,7 +120,7 @@ Here I create a random password that will used in the valheim server (I use rand
 resource "aws_ebs_volume" "valheim" {
   for_each          = local.access_points
   availability_zone = local.config_default_az
-  size              = 5
+  size              = each.value.size
 
   tags = {
     "Name" = each.key
