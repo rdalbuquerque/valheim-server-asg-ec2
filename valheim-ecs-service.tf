@@ -7,14 +7,23 @@ resource "random_string" "valheim_pwd" {
 
 locals {
   access_points = {
-    "valheim-saves"   = "/home/steam/.config/unity3d/IronGate/Valheim"
-    "valheim-server"  = "/home/steam/valheim"
-    "valheim-backups" = "/home/steam/backups"
+    "valheim-saves"   = {
+      size = 5
+      path = "/home/steam/.config/unity3d/IronGate/Valheim"
+    }
+    "valheim-server"  = {
+      size = 6
+      path = "/home/steam/valheim"
+    }
+    "valheim-backups" = {
+      size = 1
+      path = "/home/steam/backups"
+    }
   }
   ecs_task_mount_points = jsonencode([
     for k, v in local.access_points : {
       "sourceVolume" : "${k}"
-      "containerPath" : "${v}"
+      "containerPath" : "${v.path}"
     }
   ])
   ecs_task_container_definition = templatefile("valheim-task-container-definition.tftpl", {
@@ -35,7 +44,7 @@ resource "aws_ecs_service" "valheim_ec2_cluster" {
   cluster              = aws_ecs_cluster.valheim_ec2_cluster.name
   task_definition      = aws_ecs_task_definition.valheim.arn
   force_new_deployment = true
-  desired_count        = 1
+  desired_count        = 0
   capacity_provider_strategy {
     capacity_provider = aws_ecs_capacity_provider.ec2_spot_valheim.name
     base              = 1
@@ -50,7 +59,7 @@ data "aws_iam_role" "valheim_task" {
 resource "aws_ebs_volume" "valheim" {
   for_each          = local.access_points
   availability_zone = local.config_default_az
-  size              = 5
+  size              = each.value.size
 
   tags = {
     "Name" = each.key

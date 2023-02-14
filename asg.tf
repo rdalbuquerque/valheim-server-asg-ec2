@@ -42,7 +42,7 @@ resource "aws_launch_template" "valheim_ec2" {
     availability_zone = local.config_default_az
   }
   monitoring {
-    enabled = true
+    enabled = false
   }
   instance_market_options {
     market_type = "spot"
