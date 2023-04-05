@@ -183,7 +183,7 @@ resource "aws_autoscaling_group" "valheim" {
 ```
 So here we define two resources to get our auto scaling group going: `aws_launch_template` and `aws_autoscaling_group`.\
 In the launch template we are using `m6a.large` instance type. During the initial phase of the game (prior to Mistlands), using an m3.medium was sufficient. However, as we explored more of the map and reached Mistlands, the server began to experience lag and errors during saves. This ultimately resulted in the server crashing and us losing progress from the previous game day.\
-The `user_data` declared in `locals` is used to install the rexray plugin in our instance, this allow us to mount EBS storage so we keep our files safe in case our spot instance gets claimed
+The `user_data` declared in `locals` is used to install the `rexray` plugin in our instance, this allow us to mount EBS storage so we keep our files safe in case our spot instance gets claimed.\
 It's also in launch template where we say we'll be running on spot instances with the option
 ```hcl
 instance_market_options {
