@@ -183,6 +183,7 @@ resource "aws_autoscaling_group" "valheim" {
 ```
 So here we define two resources to get our auto scaling group going: `aws_launch_template` and `aws_autoscaling_group`.\
 In the launch template we are using `m6a.large` instance type. During the initial phase of the game (prior to Mistlands), using an m3.medium was sufficient. However, as we explored more of the map and reached Mistlands, the server began to experience lag and errors during saves. This ultimately resulted in the server crashing and us losing progress from the previous game day.\
+The `user_data` declared in `locals` is used to install the rexray plugin in our instance, this allow us to mount EBS storage so we keep our files safe in case our spot instance gets claimed
 It's also in launch template where we say we'll be running on spot instances with the option
 ```hcl
 instance_market_options {
@@ -261,7 +262,7 @@ Important notes here:
 * `aws_ecs_service`: We make sure that the capacity provider strategy is using spot again in the service definition
 * `aws_ecs_service`: The desired count is 0 because in my case this service is managed by [this discord bot](https://github.com/rdalbuquerque/odin-discord-bot)
 * `aws_ecs_task_definition`: CPU and memory had to be increased for the last part of the game, where we had more map discovered and got to mistlands, which seems more demanding on the server. We also started to get errors while saving, ending up losing the last game day.
-* `aws_ecs_task_definition`: We use dynamic block to configure a volume for each ebs storage. The same iteration keys are used in the creation of ebs storage so we can reference the name of the volume as `volume.key`. 
+* `aws_ecs_task_definition`: We use dynamic block to configure a volume for each ebs storage. The same iteration keys are used in the creation of EBS storage so we can reference the name of the volume as `volume.key`. 
 
 ### Conclusion
 Overall, this project on AWS using ECS with ASG capacity provider and EBS was a valuable learning experience. By using ECS, I was able to easily deploy and manage the Valheim server, and by ASG capacity provider, I was able to deploy using spot EC2 instances, drastically lowering costs. Using EBS as the data persistency layer allowed me to store Valheim server data in a central location always available to Valheim ECS task, which helped me to avoid data loss. Overall, this project has demonstrated the power and potential of AWS for containerized applications.
