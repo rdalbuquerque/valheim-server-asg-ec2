@@ -66,10 +66,26 @@ resource "aws_ebs_volume" "valheim" {
   }
 }
 
+resource "aws_ecs_service" "valheim_ec2_cluster" {
+  depends_on = [
+    aws_ebs_volume.valheim
+  ]
+  name                 = "valheim"
+  cluster              = aws_ecs_cluster.valheim_ec2_cluster.name
+  task_definition      = aws_ecs_task_definition.valheim.arn
+  force_new_deployment = true
+  desired_count        = 0
+  capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.ec2_spot_valheim.name
+    base              = 1
+    weight            = 100
+  }
+}
+
 resource "aws_ecs_task_definition" "valheim" {
   family             = "valheim-ec2"
-  cpu                = "900"
-  memory             = "3500"
+  cpu                = "1792"
+  memory             = "7680"
   execution_role_arn = data.aws_iam_role.valheim_task.arn
   network_mode       = "host"
 

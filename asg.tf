@@ -32,7 +32,7 @@ data "aws_ami" "aws_optimized_ecs" {
 resource "aws_launch_template" "valheim_ec2" {
   name_prefix   = "valheim-ec2"
   image_id      = data.aws_ami.aws_optimized_ecs.image_id
-  instance_type = "m3.medium"
+  instance_type = "m6a.large"
   key_name      = "valheim-sa"
   network_interfaces {
     associate_public_ip_address = true
